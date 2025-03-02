@@ -34,40 +34,38 @@ botClient.on("interactionCreate", (_interaction) => {
 
 const botToken = process.env.APPLICATION_TOKEN!;
 
-const ratelimitTest = await fetch(`https://discord.com/api/v9/invites/discord-developers`);
+await botClient.login(botToken).catch((err) => {
+	throw err;
+});
 
-if (!ratelimitTest.ok) {
-	console.error(
-		`Uh oh, looks like the node you're on is currently being blocked by Discord. Press the "Enter" button on your keyboard to be reassigned to a new node. (you'll need to rerun the program once you reconnect)`
-	);
+await botClient.rest.put(BotRoutes.applicationCommands(botClient.user!.id), { body: commands });
 
-	// This kills the container manager on the repl forcing Replit to assign the repl to another node with another IP address (if the ip is globally rate limited)
-	//^ in short: Restarts the bot to be used again/attempted to start up again!
-	execSync("kill 1");
-} else {
-	await botClient.login(botToken).catch((err) => {
-		throw err;
-	});
+// console.log(
+// 	"DONE | Application/Bot is up and running. DO NOT CLOSE THIS TAB UNLESS YOU ARE FINISHED USING THE BOT, IT WILL PUT THE BOT OFFLINE."
+// );
 
-	await botClient.rest.put(BotRoutes.applicationCommands(botClient.user!.id), { body: commands });
+const client = new Client();
 
-	// console.log(
-	// 	"DONE | Application/Bot is up and running. DO NOT CLOSE THIS TAB UNLESS YOU ARE FINISHED USING THE BOT, IT WILL PUT THE BOT OFFLINE."
-	// );
+client.on("ready", async () => {
+	console.log(`${client.user!.username} is ready!`);
 
-	const client = new Client();
+	const channel = client.channels.cache.get(process.env.CHANNEL_ID!)!;
+	if (channel.isText()) {
+		let attempts = 0;
 
-	client.on("ready", async () => {
-		console.log(`${client.user!.username} is ready!`);
-
-		const channel = client.channels.cache.get(process.env.CHANNEL_ID!)!;
-		if (channel.isText()) {
-			await channel.sendSlash(botClient.user!.id, "ping");
-			await channel.send("DONE!");
-
-			process.exit(0);
+		while (attempts < 6) {
+			try {
+				await channel.sendSlash(botClient.user!.id, "ping");
+				await channel.send("DONE!");
+			} catch {
+				attempts++;
+				continue;
+			}
+			break;
 		}
-	});
+	}
 
-	client.login(process.env.TOKEN!);
-}
+	process.exit(0);
+});
+
+client.login(process.env.TOKEN!);
