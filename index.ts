@@ -57,11 +57,10 @@ client.on("ready", async () => {
 			try {
 				await channel.sendSlash(botClient.user!.id, "ping");
 				await channel.send("DONE!");
+				break;
 			} catch {
 				attempts++;
-				continue;
 			}
-			break;
 		}
 	}
 
